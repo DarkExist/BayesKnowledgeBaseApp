@@ -1,0 +1,6 @@
+{
+    "serverip": "http://localhost:5011/",
+    "chanceEndpoint": "chance/",
+    "setupChancesEndpoint": "setupchances/",
+    "calculateChancesEndpoint": "calculatechances/"
+}
