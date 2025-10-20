@@ -5,7 +5,7 @@ import EditPage from './Components/EditPage';
 
 const App: React.FC = () => {
   return (
-    <Router>
+    <Router basename="/BayesKnowledgeBaseApp">
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/edit" element={<EditPage />} />
