@@ -1,3 +1,4 @@
+// backendMock.ts
 import {
   Chances,
   UserAnswer,
@@ -7,31 +8,17 @@ import {
   SetupChancesResponse,
 } from './types';
 
-// Вспомогательная функция: пересчёт по формуле Нейлора
-function updateProbability(
-  prior: number,
-  pPlus: number,
-  pMinus: number,
-  R: number
-): number {
+function bayesUpdate(prior: number, pPlus: number, pMinus: number, R: number): number {
   const eps = 1e-12;
 
-  // P(H | j)
-  const numYes = pPlus * prior;
-  const denYes = numYes + pMinus * (1 - prior);
-  const pGivenYes = denYes < eps ? 0 : numYes / denYes;
+  const pGivenYes = (pPlus * prior) / (pPlus * prior + pMinus * (1 - prior) + eps);
+  const pGivenNo = ((1 - pPlus) * prior) / ((1 - pPlus) * prior + (1 - pMinus) * (1 - prior) + eps);
 
-  // P(H | ¬j)
-  const numNo = (1 - pPlus) * prior;
-  const denNo = numNo + (1 - pMinus) * (1 - prior);
-  const pGivenNo = denNo < eps ? 0 : numNo / denNo;
-
-  // Нечёткий ответ: P(H | R) = R * P(H|j) + (1 - R) * P(H|¬j)
   return R * pGivenYes + (1 - R) * pGivenNo;
 }
 
-// 1. Инициализация шансов (априорные вероятности)
-export function setupChances(request: SetupChancesRequest): SetupChancesResponse {
+// === ФУНКЦИЯ ВМЕСТО ЗАПРОСА НА /setupchances ===
+export function mockSetupChances(request: SetupChancesRequest): SetupChancesResponse {
   const chances: Chances = {};
   for (const apt of request.professionAptitudes) {
     chances[apt.name] = apt.priorProbability;
@@ -39,28 +26,23 @@ export function setupChances(request: SetupChancesRequest): SetupChancesResponse
   return { chances };
 }
 
-// 2. Обновление шансов по одному ответу
-export function calculateChances(request: CalculateChancesRequest): { chances: Chances } {
+// === ФУНКЦИЯ ВМЕСТО ЗАПРОСА НА /calculatechances ===
+export function mockCalculateChances(request: CalculateChancesRequest): { chances: Chances } {
   const { chances, userAnswer, professionAptitudes } = request;
-  const { evidenceId, value } = userAnswer;
-
-  // Преобразуем value ∈ {-1, 1} → R ∈ {0, 1}
-  const R = value === 1.0 ? 1.0 : 0.0;
+  const R = userAnswer.value === 1.0 ? 1.0 : 0.0; // -1 → "Нет" → R=0
 
   const newChances: Chances = { ...chances };
 
   for (const apt of professionAptitudes) {
-    // Ищем, есть ли у этой профессии информация по данному evidenceId
-    const probEvidence = apt.probabilitiedEvidences.find(pe => pe.evidenceId === evidenceId);
-    if (probEvidence) {
-      const currentProb = chances[apt.name] ?? apt.priorProbability;
-      const updated = updateProbability(
-        currentProb,
-        probEvidence.probabilityOfTrue,
-        probEvidence.probabilityOfFalse,
+    const evidence = apt.probabilitiedEvidences.find(e => e.evidenceId === userAnswer.evidenceId);
+    if (evidence) {
+      const current = newChances[apt.name] ?? apt.priorProbability;
+      newChances[apt.name] = bayesUpdate(
+        current,
+        evidence.probabilityOfTrue,
+        evidence.probabilityOfFalse,
         R
       );
-      newChances[apt.name] = updated;
     }
   }
 

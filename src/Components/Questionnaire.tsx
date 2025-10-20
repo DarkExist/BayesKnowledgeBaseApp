@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { KnowledgeBase, EvidenceItem, Chances, UserAnswer, CalculateChancesRequest, SetupChancesResponse, SetupChancesRequest } from '../types';
-import { setupChances, calculateChances } from '../backendMock';
+import { mockSetupChances, mockCalculateChances } from '../backendMock';
 import ipConfig from "../ipconfig.json";
 
 interface QuestionnaireProps {
@@ -160,24 +160,28 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ knowledgeBase, onComplete
           professionAptitudes: knowledgeBase.professionAptitudes
         };
         
-        // Отправляем запрос на /setupchances
-        const response = await fetch(
-            "http://localhost:5011/chance/setupchances", {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(setupRequest),
-        });
+        // // Отправляем запрос на /setupchances
+        // const response = await fetch(
+        //     "http://localhost:5011/chance/setupchances", {
+        //   method: 'POST',
+        //   headers: {
+        //     'Content-Type': 'application/json',
+        //   },
+        //   body: JSON.stringify(setupRequest),
+        // });
 
-        console.log(JSON.stringify({
-            professionAptitudes: knowledgeBase.professionAptitudes
-          }));
-        if (!response.ok) {
-          throw new Error('Ошибка при инициализации опроса');
-        }
+        // setChances(setupRequest)
 
-        const data: Chances = await response.json();
+        // console.log(JSON.stringify({
+        //     professionAptitudes: knowledgeBase.professionAptitudes
+        //   }));
+        // if (!response.ok) {
+        //   throw new Error('Ошибка при инициализации опроса');
+        // }
+
+        // const data: Chances = await response.json();
+
+        const data: Chances = mockSetupChances(setupRequest).chances
         setChances(data);
         
         // Сохраняем chances в localStorage
@@ -231,22 +235,25 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ knowledgeBase, onComplete
       };
 
       // Отправляем запрос на сервер
-      const response = await fetch(ipConfig.serverip
-            + ipConfig.chanceEndpoint
-            + ipConfig.calculateChancesEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(request),
-      });
+      // const response = await fetch(ipConfig.serverip
+      //       + ipConfig.chanceEndpoint
+      //       + ipConfig.calculateChancesEndpoint, {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify(request),
+      // });
 
-      if (!response.ok) {
-        throw new Error('Ошибка при расчете шансов');
-      }
+      // if (!response.ok) {
+      //   throw new Error('Ошибка при расчете шансов');
+      // }
 
-      const newChances: Chances = await response.json();
+
+
+      // const newChances: Chances = await response.json();
       
+      const newChances: Chances = mockCalculateChances(request).chances;
       // Обновляем состояния
       setChances(newChances);
       setAnsweredQuestions(new Set([...answeredQuestions, currentQuestion.id]));
