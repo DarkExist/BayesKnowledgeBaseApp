@@ -29,7 +29,8 @@ export function mockSetupChances(request: SetupChancesRequest): SetupChancesResp
 // === ФУНКЦИЯ ВМЕСТО ЗАПРОСА НА /calculatechances ===
 export function mockCalculateChances(request: CalculateChancesRequest): { chances: Chances } {
   const { chances, userAnswer, professionAptitudes } = request;
-  const R = userAnswer.value === 1.0 ? 1.0 : 0.0; // -1 → "Нет" → R=0
+  const R = userAnswer.value;
+  console.log(R);
 
   const newChances: Chances = { ...chances };
 

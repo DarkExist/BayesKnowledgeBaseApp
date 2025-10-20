@@ -15,6 +15,7 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ knowledgeBase, onComplete
   const [questions, setQuestions] = useState<EvidenceItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isEnd, setIsEnd] = useState(false);
+  const [sliderValue, setSliderValue] = useState<number>(0.5);
 
   // Стили
   const pageStyle = {
@@ -368,37 +369,58 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ knowledgeBase, onComplete
           </div>
 
           {/* Кнопки ответов */}
-          <div style={{
-            display: 'flex',
-            gap: '15px',
-            marginBottom: '15px',
-            justifyContent: 'center',
-            flexWrap: 'wrap' as const
-          }}>
-            <button
-              onClick={() => handleAnswer(1.0)}
-              disabled={isLoading}
-              style={{
-                ...yesButtonStyle,
-                ...(isLoading ? disabledButtonStyle : {}),
+          <div style={{ marginBottom: '25px', textAlign: 'center' }}>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={sliderValue}
+              onChange={(e) => {
+                setSliderValue(parseFloat(e.target.value));
               }}
-              onMouseEnter={(e) => !isLoading && (e.currentTarget.style.transform = 'translateY(-3px)')}
-              onMouseLeave={(e) => !isLoading && (e.currentTarget.style.transform = 'translateY(0)')}
-            >
-              ✓ Да
-            </button>
+              style={{
+                width: '100%',
+                height: '8px',
+                borderRadius: '4px',
+                background: 'linear-gradient(to right, #f44336, #ff9800, #379af8ff, #76c478ff, #45a049)',
+                outline: 'none',
+                WebkitAppearance: 'none',
+              }}
+              disabled={isLoading}
+            />
+            {/* Подписи под слайдером */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginTop: '8px',
+              fontSize: '12px',
+              color: '#7f8c8d'
+            }}>
+              <span>Нет</span>
+              <span>Скорее нет</span>
+              <span>Не знаю</span>
+              <span>Скорее да</span>
+              <span>Да</span>
+            </div>
+          </div>
 
+          <div style={{ textAlign: 'center' }}>
             <button
-              onClick={() => handleAnswer(-1.0)}
+              onClick={() => {
+                handleAnswer(sliderValue);
+              }}
               disabled={isLoading}
               style={{
-                ...noButtonStyle,
+                ...skipButtonStyle,
                 ...(isLoading ? disabledButtonStyle : {}),
+                background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                color: 'white',
               }}
               onMouseEnter={(e) => !isLoading && (e.currentTarget.style.transform = 'translateY(-3px)')}
               onMouseLeave={(e) => !isLoading && (e.currentTarget.style.transform = 'translateY(0)')}
             >
-              ✗ Нет
+              Далее
             </button>
           </div>
         </div></>)}
@@ -440,9 +462,27 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ knowledgeBase, onComplete
           <div>
             {Object.entries(chances)
               .sort(([,a], [,b]) => b - a) // Сортировка по убыванию шансов
-              .map(([aptitude, chance]) => (
-                <div key={aptitude} style={chanceItemStyle}>
-                  <span style={{ color: '#2c3e50', fontWeight: '500' }}>{aptitude}</span>
+              .map(([aptitude, chance], index) => (
+                <div key={aptitude} style={{
+                  ...chanceItemStyle,
+                  ...(index === 0
+                    ? {
+                        background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
+                        borderLeft: '4px solid #2196f3',
+                        borderRadius: '8px',
+                        fontWeight: '700',
+                        padding: '12px',
+                        boxShadow: '0 2px 6px rgba(33,150,243,0.2)',
+                      }
+                    : {})
+                }}
+                >
+                  <span style={{ 
+                    color: '#2c3e50',
+                    fontWeight: index === 0 ? '700' : '500'
+                    }}>
+                      {index === 0 && '🏆 '}
+                      {aptitude}</span>
                   <span style={{ 
                     color: chance > 0.3 ? '#27ae60' : chance > 0.1 ? '#f39c12' : '#e74c3c',
                     fontWeight: '600',
