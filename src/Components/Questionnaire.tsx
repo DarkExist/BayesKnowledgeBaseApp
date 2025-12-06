@@ -321,7 +321,7 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({ knowledgeBase, onComplete
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent'
         }}>
-          Опрос профессиональных склонностей
+          
         </h1>
         
         {!isEnd && (<><div>

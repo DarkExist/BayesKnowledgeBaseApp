@@ -8,8 +8,14 @@ const EditPage: React.FC = () => {
   const [selectedAptitude, setSelectedAptitude] = useState<ProfessionAptitude | null>(null);
   const [newEvidenceDescription, setNewEvidenceDescription] = useState('');
   const [showAddEvidenceModal, setShowAddEvidenceModal] = useState(false);
+  const [newAptitudeName, setNewAptitudeName] = useState(''); 
+  const [showAddAptitudeModal, setShowAddAptitudeModal] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [newDatabaseName, setNewDatabaseName] = useState('');
+  const [evidenceToDelete, setEvidenceToDelete] = useState<number | null>(null); // Новое состояние для удаления вопроса
+  const [aptitudeToDelete, setAptitudeToDelete] = useState<string | null>(null); // Новое состояние для удаления варианта
+  const [showDeleteEvidenceModal, setShowDeleteEvidenceModal] = useState(false); // Новое состояние модалки
+  const [showDeleteAptitudeModal, setShowDeleteAptitudeModal] = useState(false); // Новое состояние модалки
 
   useEffect(() => {
     const savedData = localStorage.getItem('knowledgeBase');
@@ -22,6 +28,20 @@ const EditPage: React.FC = () => {
   }, []);
 
   // Стили
+    const deleteButtonStyle = {
+    position: 'absolute' as const,
+    top: '8px',
+    right: '8px',
+    background: 'none',
+    border: 'none',
+    color: '#e74c3c',
+    fontSize: '18px',
+    cursor: 'pointer',
+    padding: '4px',
+    borderRadius: '4px',
+    transition: 'all 0.2s ease',    
+  };
+
   const pageStyle = {
     minHeight: '100vh',
     padding: '20px',
@@ -138,6 +158,48 @@ const EditPage: React.FC = () => {
     navigate(-1);
   };
 
+    // Новая функция для удаления вопроса
+  const handleDeleteEvidence = () => {
+    if (!knowledgeBase || evidenceToDelete === null) return;
+    
+    // Удаляем вопрос из базы
+    const updatedEvidenceList = knowledgeBase.evidenceList.filter(e => e.id !== evidenceToDelete);
+    
+    // Удаляем ссылки на этот вопрос из всех вариантов
+    const updatedAptitudes = knowledgeBase.professionAptitudes.map(aptitude => ({
+      ...aptitude,
+      probabilitiedEvidences: aptitude.probabilitiedEvidences.filter(
+        evidence => evidence.evidenceId !== evidenceToDelete
+      )
+    }));
+    
+    setKnowledgeBase({
+      ...knowledgeBase,
+      evidenceList: updatedEvidenceList,
+      professionAptitudes: updatedAptitudes
+    });
+    
+    setShowDeleteEvidenceModal(false);
+    setEvidenceToDelete(null);
+  };
+
+  // Новая функция для удаления варианта
+  const handleDeleteAptitude = () => {
+    if (!knowledgeBase || !aptitudeToDelete) return;
+    
+    const updatedAptitudes = knowledgeBase.professionAptitudes.filter(
+      aptitude => aptitude.name !== aptitudeToDelete
+    );
+    
+    setKnowledgeBase({
+      ...knowledgeBase,
+      professionAptitudes: updatedAptitudes
+    });
+    
+    setShowDeleteAptitudeModal(false);
+    setAptitudeToDelete(null);
+  };
+
   const handleSaveToLocalStorage = () => {
     if (knowledgeBase) {
       const updatedBase = {
@@ -200,6 +262,37 @@ const EditPage: React.FC = () => {
     setNewEvidenceDescription('');
     setShowAddEvidenceModal(false);
   };
+
+  // Новая функция для добавления варианта
+  const handleAddAptitude = () => {
+    if (!knowledgeBase || !newAptitudeName.trim()) return;
+    
+    // Проверка на уникальность названия
+    const exists = knowledgeBase.professionAptitudes.some(
+      apt => apt.name.toLowerCase() === newAptitudeName.trim().toLowerCase()
+    );
+    
+    if (exists) {
+      alert('Вариант с таким названием уже существует!');
+      return;
+    }
+    
+    const newAptitude: ProfessionAptitude = {
+      name: newAptitudeName.trim(),
+      priorProbability: 0.1, // Значение по умолчанию
+      probabilitiedEvidences: [] // Пустой массив свидетельств
+    };
+
+    const updatedKnowledgeBase = {
+      ...knowledgeBase,
+      professionAptitudes: [...knowledgeBase.professionAptitudes, newAptitude]
+    };
+
+    setKnowledgeBase(updatedKnowledgeBase);
+    setNewAptitudeName('');
+    setShowAddAptitudeModal(false);
+  };
+
 
   const handlePriorProbabilityChange = (value: number) => {
     if (!knowledgeBase || !selectedAptitude) return;
@@ -334,7 +427,7 @@ const EditPage: React.FC = () => {
           </div>
 
           <h2 style={{ color: '#2c3e50', borderBottom: '2px solid #4facfe', paddingBottom: '10px' }}>
-            Свидетельства в этом aptitude
+            Свидетельства в этом варианте
           </h2>
           
           {selectedAptitude.probabilitiedEvidences.length === 0 ? (
@@ -522,25 +615,47 @@ const EditPage: React.FC = () => {
                     Добавить вопрос
                   </button>
                 </div>
-                <div style={{ maxHeight: '400px', overflowY: 'auto', padding: '10px' }}>
+                <div style={{ maxHeight: '400px', overflowY: 'auto', padding: '10px', position: 'relative' }}>
                   {knowledgeBase.evidenceList.map(evidence => (
-                    <div key={evidence.id} style={listItemStyle}>
+                    <div key={evidence.id} style={{ ...listItemStyle, position: 'relative' }}>
                       <strong style={{ color: '#2c3e50' }}>ID {evidence.id}:</strong> {evidence.description}
+                      <button
+                        onClick={() => {
+                          setEvidenceToDelete(evidence.id);
+                          setShowDeleteEvidenceModal(true);
+                        }}
+                        style={deleteButtonStyle}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      >
+                        ×
+                      </button>
                     </div>
                   ))}
                 </div>
               </div>
 
+
               {/* Список aptitudes */}
               <div style={{ flex: '1', minWidth: '300px' }}>
-                <h2 style={{ color: '#2c3e50', marginBottom: '15px' }}>
-                  Список вариантов ({knowledgeBase.professionAptitudes.length})
-                </h2>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                  <h2 style={{ color: '#2c3e50', margin: 0 }}>
+                    Список вариантов ({knowledgeBase.professionAptitudes.length})
+                  </h2>
+                  <button 
+                    onClick={() => setShowAddAptitudeModal(true)}
+                    style={secondaryButtonStyle}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                  >
+                    Добавить вариант
+                  </button>
+                </div>
                 <div>
                   {knowledgeBase.professionAptitudes.map(aptitude => (
                     <div 
                       key={aptitude.name} 
-                      style={{ ...listItemStyle, cursor: 'pointer' }}
+                      style={{ ...listItemStyle, cursor: 'pointer', position: 'relative' }}
                       onClick={() => setSelectedAptitude(aptitude)}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.transform = 'translateY(-2px)';
@@ -555,6 +670,18 @@ const EditPage: React.FC = () => {
                       <small style={{ color: '#7f8c8d' }}>
                         Prior: {aptitude.priorProbability} | Evidence: {aptitude.probabilitiedEvidences.length} items
                       </small>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation(); // Предотвращаем переход к редактированию
+                          setAptitudeToDelete(aptitude.name);
+                          setShowDeleteAptitudeModal(true);
+                        }}
+                        style={deleteButtonStyle}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      >
+                        ×
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -584,6 +711,101 @@ const EditPage: React.FC = () => {
                     </button>
                     <button 
                       onClick={() => setShowAddEvidenceModal(false)}
+                      style={{ ...buttonStyle, background: 'linear-gradient(135deg, #cccccc 0%, #999999 100%)' }}
+                      onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                      onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                    >
+                      Отмена
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Модальное окно удаления вопроса */}
+            {showDeleteEvidenceModal && (
+              <div style={modalOverlayStyle}>
+                <div style={modalContentStyle}>
+                  <h3 style={{ color: '#2c3e50', marginBottom: '20px' }}>Подтверждение удаления</h3>
+                  <p style={{ marginBottom: '25px' }}>
+                    Вы уверены, что хотите удалить вопрос ID {evidenceToDelete}?<br />
+                    Это действие удалит вопрос из всех вариантов.
+                  </p>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button 
+                      onClick={handleDeleteEvidence}
+                      style={{ ...buttonStyle, background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%)' }}
+                      onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                      onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                    >
+                      Удалить
+                    </button>
+                    <button 
+                      onClick={() => setShowDeleteEvidenceModal(false)}
+                      style={{ ...buttonStyle, background: 'linear-gradient(135deg, #cccccc 0%, #999999 100%)' }}
+                      onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                      onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                    >
+                      Отмена
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Модальное окно удаления варианта */}
+            {showDeleteAptitudeModal && (
+              <div style={modalOverlayStyle}>
+                <div style={modalContentStyle}>
+                  <h3 style={{ color: '#2c3e50', marginBottom: '20px' }}>Подтверждение удаления</h3>
+                  <p style={{ marginBottom: '25px' }}>
+                    Вы уверены, что хотите удалить вариант "{aptitudeToDelete}"?<br />
+                  </p>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button 
+                      onClick={handleDeleteAptitude}
+                      style={{ ...buttonStyle, background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%)' }}
+                      onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                      onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                    >
+                      Удалить
+                    </button>
+                    <button 
+                      onClick={() => setShowDeleteAptitudeModal(false)}
+                      style={{ ...buttonStyle, background: 'linear-gradient(135deg, #cccccc 0%, #999999 100%)' }}
+                      onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                      onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                    >
+                      Отмена
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Новое модальное окно добавления варианта */}
+            {showAddAptitudeModal && (
+              <div style={modalOverlayStyle}>
+                <div style={modalContentStyle}>
+                  <h3 style={{ color: '#2c3e50', marginBottom: '20px' }}>Добавить новый вариант</h3>
+                  <input
+                    type="text"
+                    value={newAptitudeName}
+                    onChange={(e) => setNewAptitudeName(e.target.value)}
+                    placeholder="Введите название варианта"
+                    style={{ ...inputStyle, width: '100%', marginBottom: '20px' }}
+                  />
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button 
+                      onClick={handleAddAptitude}
+                      style={buttonStyle}
+                      onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                      onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                    >
+                      Добавить
+                    </button>
+                    <button 
+                      onClick={() => setShowAddAptitudeModal(false)}
                       style={{ ...buttonStyle, background: 'linear-gradient(135deg, #cccccc 0%, #999999 100%)' }}
                       onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
                       onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}

@@ -67,6 +67,33 @@ const HomePage: React.FC = () => {
     }
   };
 
+  const handleCreateNewBase = () => {
+    // Генерируем имя базы с текущей датой и временем
+    const now = new Date();
+    const formattedDate = now.toLocaleDateString('ru-RU').replace(/\//g, '-');
+    const formattedTime = now.toLocaleTimeString('ru-RU').replace(/:/g, '-');
+    const newName = `KnowledgeBase${formattedDate}_${formattedTime}`;
+    
+    // Создаем пустую базу знаний
+    const newKnowledgeBase: KnowledgeBase = {
+      name: newName,
+      professionAptitudes: [],
+      evidenceList: []
+    };
+    
+    // Сохраняем в localStorage
+    localStorage.setItem('knowledgeBase', JSON.stringify(newKnowledgeBase));
+    localStorage.setItem('knowledgeBaseName', newName);
+    
+    // Обновляем состояние
+    setDatabaseName(newName);
+    setKnowledgeBase(newKnowledgeBase);
+    setIsLoaded(true);
+    
+    // Перенаправляем на страницу редактирования
+    navigate('/edit', { state: { databaseName: newName } });
+  };
+
   const handleStart = () => {
     if (isLoaded && knowledgeBase) {
       setShowQuestionnaire(true);
@@ -179,19 +206,33 @@ const HomePage: React.FC = () => {
         >
           Загрузить базу знаний
         </button>
-        <button 
-          onClick={handleEdit}
-          disabled={!isLoaded}
-          style={{ 
-            ...(isLoaded ? topButtonStyle : topButtonDisabledStyle),
-            marginLeft: '10px',
-            ...(isEditHovered && isLoaded ? buttonHoverStyle : {})
-          }}
-          onMouseEnter={() => setIsEditHovered(true)}
-          onMouseLeave={() => setIsEditHovered(false)}
-        >
-          Редактировать базу знаний
-        </button>
+        {isLoaded ? (
+          <button 
+            onClick={handleEdit}
+            style={{ 
+              ...topButtonStyle,
+              marginLeft: '10px',
+              ...(isEditHovered ? buttonHoverStyle : {})
+            }}
+            onMouseEnter={() => setIsEditHovered(true)}
+            onMouseLeave={() => setIsEditHovered(false)}
+          >
+            Редактировать базу знаний
+          </button>
+        ) : (
+          <button 
+            onClick={handleCreateNewBase}
+            style={{ 
+              ...topButtonStyle,
+              marginLeft: '10px',
+              ...(isEditHovered ? buttonHoverStyle : {})
+            }}
+            onMouseEnter={() => setIsEditHovered(true)}
+            onMouseLeave={() => setIsEditHovered(false)}
+          >
+            Создать базу знаний
+          </button>
+        )}
       </div>
 
       {/* Основной контент */}
